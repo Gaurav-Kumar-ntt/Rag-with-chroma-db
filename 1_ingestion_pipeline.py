@@ -4,6 +4,7 @@ from langchain_text_splitters import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
 def load_documents(docs_path="docs"):
@@ -70,15 +71,18 @@ def create_vector_store(chunks, persist_directory="db/chroma_db"):
     
     # Create ChromaDB vector store
     print("--- Creating vector store ---")
+    start = time.time()
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=embedding_model,
-        persist_directory=persist_directory, 
+        persist_directory=persist_directory,
         collection_metadata={"hnsw:space": "cosine"}
     )
+    print(f"⏱️ Build time: {time.time() - start:.2f}s")
     print("--- Finished creating vector store ---")
-    
+
     print(f"Vector store created and saved to {persist_directory}")
+
     return vectorstore
 
 def main():
@@ -114,6 +118,13 @@ def main():
     vectorstore = create_vector_store(chunks, persistent_directory)
     
     print("\n✅ Ingestion complete! Your documents are now ready for RAG queries.")
+
+    query = "What does the company do?"  # use a question relevant to your docs
+    start = time.time()
+    results = vectorstore.similarity_search(query, k=3)
+    print(f"⏱️ Query time: {time.time() - start:.4f}s")
+    print(f"Top result preview: {results[0].page_content[:150]}...")
+
     return vectorstore
 
 if __name__ == "__main__":
